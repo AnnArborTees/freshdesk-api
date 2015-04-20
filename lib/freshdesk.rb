@@ -4,7 +4,6 @@ require 'uri'
 
 class Freshdesk
 
-  # custom errors
   class AlreadyExistedError < StandardError; end
   class ConnectionError < StandardError; end
 
@@ -17,7 +16,7 @@ class Freshdesk
   end
 
   def response_format
-    @response_format ||= "xml"
+    @response_format ||= "json"
   end
 
   # Specify the response format to use--JSON or XML. Currently JSON is only
@@ -33,9 +32,8 @@ class Freshdesk
   #   Returns nil if there is no response
   def self.fd_define_get(name)
     name = name.to_s
-    method_name = "get_" + name
 
-    define_method method_name do |*args|
+    define_method "get_#{name}" do |*args|
       uri = mapping(name)
       uri.gsub!(/\.xml/, "\.#{response_format}")
 
@@ -65,9 +63,8 @@ class Freshdesk
   # RESTful URI. This method and fd_define_get are mutually exclusive.
   def self.fd_define_parameterized_get(name)
     name = name.to_s
-    method_name = "get_" + name
 
-    define_method method_name do |params={}|
+    define_method "get_#{name}" do |params={}|
       uri = mapping(name)
       uri.gsub!(/\.xml/, ".#{response_format}")
       unless params.empty?
@@ -85,9 +82,8 @@ class Freshdesk
   # Freshdesk API client support "DELETE" with the required id parameter
   def self.fd_define_delete(name)
     name = name.to_s
-    method_name = "delete_" + name
 
-    define_method method_name do |args|
+    define_method "delete_#{name}" do |args|
       uri = mapping(name)
       raise StandardError, "An ID is required to delete" if args.size.eql? 0
       uri.gsub!(/.xml/, "/#{args}.xml")
@@ -102,9 +98,8 @@ class Freshdesk
   #    ConnectionError     if there is connection problem with the server
   def self.fd_define_post(name)
     name = name.to_s
-    method_name = "post_" + name
 
-    define_method method_name do |args, id=nil|
+    define_method "post_#{name}" do |args, id=nil|
       raise StandardError, "Arguments are required to modify data" if args.size.eql? 0
       uri = mapping(name, id)
 
@@ -159,9 +154,8 @@ class Freshdesk
   #    ConnectionError     if there is connection problem with the server
   def self.fd_define_put(name)
     name = name.to_s
-    method_name = "put_" + name
 
-    define_method method_name do |args|
+    define_method "put_#{name}" do |args|
       raise StandardError, "Arguments are required to modify data" if args.size.eql? 0
       raise StandardError, "id is required to modify data" if args[:id].nil?
       uri = mapping(name)
@@ -197,7 +191,7 @@ class Freshdesk
     end
   end
 
-  [:tickets, :ticket_fields, :ticket_notes, :users, :forums, :solutions, :companies, :time_sheets].each do |a|
+  [:tickets, :ticket_fields, :ticket_notes, :forums, :solutions, :companies, :time_sheets].each do |a|
     fd_define_get a
     fd_define_post a
     fd_define_delete a
@@ -207,6 +201,11 @@ class Freshdesk
   [:user_ticket].each do |resource|
     fd_define_parameterized_get resource
   end
+
+  fd_define_parameterized_get :users
+  fd_define_post :users
+  fd_define_delete :users
+  fd_define_put :users
 
 
   # Mapping of object name to url:
