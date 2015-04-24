@@ -53,7 +53,7 @@ class Freshdesk
 
       begin
         response = RestClient::Request.execute(@auth.merge(:method => :get, :url => uri))
-      rescue Exception
+      rescue Exception => e
         response = nil
       end
     end
@@ -160,20 +160,20 @@ class Freshdesk
       raise StandardError, "id is required to modify data" if args[:id].nil?
       uri = mapping(name)
 
-      builder = Nokogiri::XML::Builder.new do |xml|
-        xml.send(doc_name(name)) {
-          args.each do |key, value|
-            xml.send(key, value)
-          end
-        }
-      end
+      # builder = Nokogiri::XML::Builder.new do |xml|
+      #   xml.send(doc_name(name)) {
+      #     args.each do |key, value|
+      #       xml.send(key, value)
+      #     end
+      #   }
+      # end
 
       begin
-        uri.gsub!(/.xml/, "/#{args[:id]}.xml")
+        uri.gsub!(/.xml/, "/#{args[:id]}.json")
         options = @auth.merge(
           :method => :put,
-          :payload => builder.to_xml,
-          :headers => {:content_type => "text/xml"},
+          :payload => args.to_json,
+          :headers => {:content_type => "application/json"},
           :url => uri
         )
         response = RestClient::Request.execute(options)
@@ -183,7 +183,7 @@ class Freshdesk
       rescue RestClient::Found
         raise ConnectionError, "Connection to the server failed. Please check username/password"
 
-      rescue Exception
+      rescue Exception => e
         raise
       end
 
